@@ -1,1 +1,1 @@
-# data-modeling-with-cassandra
+# Data modeling with Cassandra
