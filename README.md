@@ -93,8 +93,8 @@ The column key is `item_in_session` as we need songs sorted by item in section.
 ```Python
 # create table
 query = "CREATE TABLE IF NOT EXISTS song_playlist_session "
-query += "(user_id int, session_id int, item_in_session int, artist text, song text, first_name text, last_name text, \
-PRIMARY KEY ((user_id, session_id), item_in_session))"
+query += "(user_id int, session_id int, item_in_session int, artist text, song text, \
+first_name text, last_name text, PRIMARY KEY ((user_id, session_id), item_in_session))"
 try:
     session.execute(query)
 except Exception as e:
