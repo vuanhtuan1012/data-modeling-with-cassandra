@@ -105,7 +105,7 @@ with open(new_datafile, encoding = 'utf8') as f:
     for line in csvreader:
         query = "INSERT INTO question_2 (artist, song, session_id, item_in_session, user_id, first_name, last_name)"
         query = query + " VALUES (%s, %s, %s, %s, %s, %s, %s)"
-        session.execute(query, (line[0], line[9], int(line[8]), int(line[3]), int(line[10]), line[1], line[4])) 
+        session.execute(query, (line[0], line[9], int(line[8]), int(line[3]), int(line[10]), line[1], line[4]))
 ```
 
 #### Question 3: Get every user name (first and last) in my music app history who listened to a given song.
@@ -135,7 +135,7 @@ with open(new_datafile, encoding = 'utf8') as f:
     for line in csvreader:
         query = "INSERT INTO question_3 (song, user_id, first_name, last_name)"
         query = query + " VALUES (%s, %s, %s, %s)"
-        session.execute(query, (line[9], int(line[10]), line[1], line[4])) 
+        session.execute(query, (line[9], int(line[10]), line[1], line[4]))
 ```
 
 ### 3. Do queries on database
@@ -148,7 +148,7 @@ try:
     rows = session.execute(query)
 except Exception as e:
     print(e)
-    
+
 for row in rows:
     print("artist: {}, song: {}, length: {}".format(row.artist, row.song, row.length))
 ```
@@ -166,7 +166,7 @@ try:
     rows = session.execute(query)
 except Exception as e:
     print(e)
-    
+
 for row in rows:
     print("artist: {}, song: {} (item in section: {}), user: {} {}".format(
             row.artist, row.song, row.item_in_session, row.first_name, row.last_name)
@@ -189,7 +189,7 @@ try:
     rows = session.execute(query)
 except Exception as e:
     print(e)
-    
+
 for row in rows:
     print("user: {} {}, user_id: {}".format(row.first_name, row.last_name, row.user_id))
 ```
