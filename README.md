@@ -44,20 +44,20 @@ The analysis team needs to query the database to answer the following three ques
 
 #### Question 1: Get the artist, song title and song’s length in the music app history that was heard during a session id and an item in section.
 
-To answer this question, we will create the table  `question_1`  which consists of 5 columns:
+To answer this question, we will create the table  `artist_song_session`  which consists of 5 columns:
 
+-   `session_id`: stores the session id, data type: int
+-   `item_in_session`: stores the item number in session, data type: int
 -   `artist`: stores the artist name, data type: text
 -   `song`: stores the song title, data type: text
 -   `length`: stores the song's length, data type: float
--   `session_id`: stores the session id, data type: int
--   `item_in_session`: stores the item number in session, data type: int
 
 The partition key is  `session_id`, and the column key is  `item_in_session`.
 
 ```Python
 # create table
-query = "CREATE TABLE IF NOT EXISTS question_1 "
-query += "(artist text, song text, length double, session_id int, item_in_session int, \
+query = "CREATE TABLE IF NOT EXISTS artist_song_session "
+query += "(session_id int, item_in_session int, artist text, song text, length double, \
 PRIMARY KEY (session_id, item_in_session))"
 try:
     session.execute(query)
@@ -69,30 +69,32 @@ with open(new_datafile, encoding = 'utf8') as f:
     csvreader = csv.reader(f)
     next(csvreader) # skip header
     for line in csvreader:
-        query = "INSERT INTO question_1 (artist, song, length, session_id, item_in_session)"
+        query = "INSERT INTO artist_song_session (session_id, item_in_session, artist, song, length)"
         query = query + " VALUES (%s, %s, %s, %s, %s)"
-        session.execute(query, (line[0], line[9], float(line[5]), int(line[8]), int(line[3])))
+        session.execute(query, (int(line[8]), int(line[3]), line[0], line[9], float(line[5])))
 ```
 
 #### Question 2: Get only the following: name of artist, song (sorted by `itemInSession`) and user (first and last name) for a given user id and session id.
 
-To answer this question, we will create the table  `question_2`  which consists of 7 columns:
+To answer this question, we will create the table  `song_playlist_session`  which consists of 7 columns:
 
--   `artist`: stores the artist name, data type: text
--   `song`: stores the song title, data type: text
+-   `user_id`: stores the user id, data type: int
 -   `session_id`: stores the session id, data type: int
 -   `item_in_session`: stores the item number in session, data type: int
--   `user_id`: stores the user id, data type: int
+-   `artist`: stores the artist name, data type: text
+-   `song`: stores the song title, data type: text
 -   `first_name`: stores the first name of user, data type: text
 -   `last_name`: stores the last name of, data type: text
 
-The partition key is  `user_id`, and the column keys are  `session_id`  and  `item_in_session`. Since we need songs sorted by item in section then  `item_in_session`  is added to column keys.
+The partition keys are  `user_id` and `session_id`. We use both user_id and session_id as primary keys so that sessions from the same user are stored in the same nodes.
+
+The column key is `item_in_session` as we need songs sorted by item in section.
 
 ```Python
 # create table
-query = "CREATE TABLE IF NOT EXISTS question_2 "
-query += "(artist text, song text, session_id int, item_in_session int, user_id int, first_name text, last_name text, \
-PRIMARY KEY (user_id, session_id, item_in_session))"
+query = "CREATE TABLE IF NOT EXISTS song_playlist_session "
+query += "(user_id int, session_id int, item_in_session int, artist text, song text, first_name text, last_name text, \
+PRIMARY KEY ((user_id, session_id), item_in_session))"
 try:
     session.execute(query)
 except Exception as e:
@@ -103,14 +105,15 @@ with open(new_datafile, encoding = 'utf8') as f:
     csvreader = csv.reader(f)
     next(csvreader) # skip header
     for line in csvreader:
-        query = "INSERT INTO question_2 (artist, song, session_id, item_in_session, user_id, first_name, last_name)"
+        query = "INSERT INTO song_playlist_session (user_id, session_id, item_in_session, artist, song, \
+                first_name, last_name)"
         query = query + " VALUES (%s, %s, %s, %s, %s, %s, %s)"
-        session.execute(query, (line[0], line[9], int(line[8]), int(line[3]), int(line[10]), line[1], line[4]))
+        session.execute(query, (int(line[10]), int(line[8]), int(line[3]), line[0], line[9], line[1], line[4]))
 ```
 
 #### Question 3: Get every user name (first and last) in my music app history who listened to a given song.
 
-To answer this question, we will create the table  `question_3`  which consists of 4 columns:
+To answer this question, we will create the table  `user_song`  which consists of 4 columns:
 
 -   `song`: stores the song title, data type: text
 -   `user_id`: stores the user id, data type: int
@@ -121,7 +124,7 @@ The partition key is  `song`, and the column key is  `user_id`. We add  `user_id
 
 ```Python
 # create table
-query = "CREATE TABLE IF NOT EXISTS question_3 "
+query = "CREATE TABLE IF NOT EXISTS user_song "
 query += "(song text, user_id int, first_name text, last_name text, PRIMARY KEY (song, user_id))"
 try:
     session.execute(query)
@@ -133,72 +136,89 @@ with open(new_datafile, encoding = 'utf8') as f:
     csvreader = csv.reader(f)
     next(csvreader) # skip header
     for line in csvreader:
-        query = "INSERT INTO question_3 (song, user_id, first_name, last_name)"
+        query = "INSERT INTO user_song (song, user_id, first_name, last_name)"
         query = query + " VALUES (%s, %s, %s, %s)"
         session.execute(query, (line[9], int(line[10]), line[1], line[4]))
 ```
 
-### 3. Do queries on database
+### 3. Query data from database
 
 #### Question 1: Give me the artist, song title and song's length in the music app history that was heard during `sessionId = 338`, and `itemInSession = 4`.
 
 ```Python
-query = "SELECT * FROM question_1 WHERE session_id=338 and item_in_session=4"
+query = "SELECT artist, song, length FROM artist_song_session WHERE session_id=338 and item_in_session=4"
 try:
     rows = session.execute(query)
 except Exception as e:
     print(e)
 
+data = PrettyTable()
+data.field_names = ["Artist", "Song", "Length"]
+data.align = "l"
+data.align["Length"] = "r"
 for row in rows:
-    print("artist: {}, song: {}, length: {}".format(row.artist, row.song, row.length))
+    data.add_row([row.artist, row.song, row.length])
+print(data)
 ```
 
 The result:
-```
-artist: Faithless, song: Music Matters (Mark Knight Dub), length: 495.3073
-```
+
+| Artist | Song | Length |
+| :--- | :--- | ---: |
+| Faithless | Music Matters (Mark Knight Dub) | 495.3073 |
 
 #### Question 2: Give me only the following: name of artist, song (sorted by `itemInSession`) and user (first and last name) for `userid = 10`, `sessionid = 182`.
 
 ```Python
-query = "SELECT * FROM question_2 WHERE user_id=10 and session_id=182"
+query = "SELECT item_in_session, artist, song, first_name, last_name FROM song_playlist_session \
+WHERE user_id=10 and session_id=182"
 try:
     rows = session.execute(query)
 except Exception as e:
     print(e)
 
+data = PrettyTable()
+data.field_names = ["Artist", "Song", "Item in session", "First name", "Last name"]
+data.align = "l"
+data.align["Item in session"] = "r"
 for row in rows:
-    print("artist: {}, song: {} (item in section: {}), user: {} {}".format(
-            row.artist, row.song, row.item_in_session, row.first_name, row.last_name)
-         )
+    data.add_row([row.artist, row.song, row.item_in_session, row.first_name, row.last_name])
+print(data)
 ```
 
 The result:
-```
-artist: Down To The Bone, song: Keep On Keepin' On (item in section: 0), user: Sylvie Cruz
-artist: Three Drives, song: Greece 2000 (item in section: 1), user: Sylvie Cruz
-artist: Sebastien Tellier, song: Kilometer (item in section: 2), user: Sylvie Cruz
-artist: Lonnie Gordon, song: Catch You Baby (Steve Pitron & Max Sanna Radio Edit) (item in section: 3), user: Sylvie Cruz
-```
+
+| Artist | Song | Item in session | First name | Last name |
+| :--- | :--- | ---: | :--- | :--- |
+| Down To The Bone | Keep On Keepin' On | 0 | Sylvie | Cruz |
+| Three Drives | Greece 2000 | 1 | Sylvie | Cruz |
+| Sebastien Tellier | Kilometer | 2 | Sylvie | Cruz |
+| Lonnie Gordon | Catch You Baby (Steve Pitron & Max Sanna Radio Edit) | 3 | Sylvie | Cruz |
 
 #### Question 3: Give me every user name (first and last) in my music app history who listened to the song `All Hands Against His Own`.
 
 ```Python
-query = "SELECT * FROM question_3 WHERE song='All Hands Against His Own'"
+query = "SELECT user_id, first_name, last_name FROM user_song WHERE song='All Hands Against His Own'"
 try:
     rows = session.execute(query)
 except Exception as e:
     print(e)
 
+data = PrettyTable()
+data.field_names = ["User Id", "First name", "Last name"]
+data.align = "l"
+data.align["User Id"] = "r"
 for row in rows:
-    print("user: {} {}, user_id: {}".format(row.first_name, row.last_name, row.user_id))
+    data.add_row([row.user_id, row.first_name, row.last_name])
+print(data)
 ```
 
 The result:
-```
-user: Jacqueline Lynch, user_id: 29
-user: Tegan Levine, user_id: 80
-user: Sara Johnson, user_id: 95
-```
+
+| User Id | First name | Last name |
+| ---: | :--- | :--- |
+| 29 | Jacqueline | Lynch |
+| 80 | Tegan | Levine |
+| 95 | Sara | Johnson |
 
 The complete source code is in the notebook [project](project.ipynb).
