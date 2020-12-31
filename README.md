@@ -198,27 +198,26 @@ The result:
 #### Question 3: Give me every user name (first and last) in my music app history who listened to the song `All Hands Against His Own`.
 
 ```Python
-query = "SELECT user_id, first_name, last_name FROM user_song WHERE song='All Hands Against His Own'"
+query = "SELECT first_name, last_name FROM user_song WHERE song='All Hands Against His Own'"
 try:
     rows = session.execute(query)
 except Exception as e:
     print(e)
 
 data = PrettyTable()
-data.field_names = ["User Id", "First name", "Last name"]
+data.field_names = ["First name", "Last name"]
 data.align = "l"
-data.align["User Id"] = "r"
 for row in rows:
-    data.add_row([row.user_id, row.first_name, row.last_name])
+    data.add_row([row.first_name, row.last_name])
 print(data)
 ```
 
 The result:
 
-| User Id | First name | Last name |
-| ---: | :--- | :--- |
-| 29 | Jacqueline | Lynch |
-| 80 | Tegan | Levine |
-| 95 | Sara | Johnson |
+| First name | Last name |
+| :--- | :--- |
+| Jacqueline | Lynch |
+| Tegan | Levine |
+| Sara | Johnson |
 
 The complete source code is in the notebook [project](project.ipynb).
